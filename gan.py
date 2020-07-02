@@ -1,10 +1,11 @@
 '''
-This notebook demonstrates this process on the MNIST dataset. The following animation shows a series of images 
-produced by the generator as it was trained for 50 epochs. The images begin as random noise, and increasingly 
-resemble hand written digits over time.
+This notebook demonstrates the training process of GAN on the MNIST dataset. 
+The images produced by the generator begin as random noise, and increasingly 
+resemble hand written digits over time. 
+
+Import TensorFlow and other libraries
 '''
 
-# Import TensorFlow and other libraries
 import tensorflow as tf
 
 import glob
@@ -18,8 +19,9 @@ import time
 
 from IPython import display
 
-# Load and prepare the dataset
 '''
+Load and prepare the dataset
+
 You will use the MNIST dataset to train the generator and the discriminator. The generator will generate handwritten 
 digits resembling the MNIST data.
 '''
@@ -33,7 +35,7 @@ BUFFER_SIZE = 60000
 BATCH_SIZE = 256
 
 # Batch and shuffle the data
-train_dataset = tf.data.Dataset.from_tensor_slices(train_images).shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
+train_dataset = tf.data.Dataset.from_tensor_slices(train_images).shuffle(BUFFER_SIZE).batch(BATCH_SIZE) 
 
 '''
 Create the models
@@ -92,13 +94,14 @@ def make_discriminator_model():
     return model
 
 
+# Create the instances of generator and discriminator.
+
 generator = make_generator_model()
 discriminator = make_discriminator_model()
 
-'''
-Define the loss and optimizers
-Define loss functions and optimizers for both models.
-'''
+
+# Define loss functions and optimizers for both models.
+
 # This method returns a helper function to compute cross entropy loss
 cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
@@ -118,8 +121,8 @@ def discriminator_loss(real_output, fake_output):
 '''
 Generator loss
 The generator's loss quantifies how well it was able to trick the discriminator. Intuitively, if the generator is performing
- well, the discriminator will classify the fake images as real (or 1). Here, we will compare the discriminators decisions 
- on the generated images to an array of 1s.
+well, the discriminator will classify the fake images as real (or 1). Here, we will compare the discriminators decisions 
+on the generated images to an array of 1s.
 '''
 
 def generator_loss(fake_output):
@@ -127,7 +130,6 @@ def generator_loss(fake_output):
 
 
 # The discriminator and the generator optimizers are different since we will train two networks separately.
-
 generator_optimizer = tf.keras.optimizers.Adam(1e-4)
 discriminator_optimizer = tf.keras.optimizers.Adam(1e-4)
 
@@ -148,8 +150,7 @@ EPOCHS = 50
 noise_dim = 100
 num_examples_to_generate = 16
 
-# We will reuse this seed overtime (so it's easier)
-# to visualize progress in the animated GIF)
+# We will reuse this seed overtime so it's easier to visualize progress in the animated GIF)
 seed = tf.random.normal([num_examples_to_generate, noise_dim])
 
 '''
@@ -165,13 +166,13 @@ def train_step(images):
     noise = tf.random.normal([BATCH_SIZE, noise_dim])
 
     with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
-      generated_images = generator(noise, training=True)
+        generated_images = generator(noise, training=True)
 
-      real_output = discriminator(images, training=True)
-      fake_output = discriminator(generated_images, training=True)
+        real_output = discriminator(images, training=True)
+        fake_output = discriminator(generated_images, training=True)
 
-      gen_loss = generator_loss(fake_output)
-      disc_loss = discriminator_loss(real_output, fake_output)
+        gen_loss = generator_loss(fake_output)
+        disc_loss = discriminator_loss(real_output, fake_output)
 
     gradients_of_generator = gen_tape.gradient(gen_loss, generator.trainable_variables)
     gradients_of_discriminator = disc_tape.gradient(disc_loss, discriminator.trainable_variables)
@@ -181,11 +182,11 @@ def train_step(images):
 
 
 def train(dataset, epochs):
-  for epoch in range(epochs):
-    start = time.time()
+    for epoch in range(epochs):
+        start = time.time()
 
     for image_batch in dataset:
-      train_step(image_batch)
+        train_step(image_batch)
 
     # Produce images for the GIF as we go
     display.clear_output(wait=True)
@@ -195,37 +196,37 @@ def train(dataset, epochs):
 
     # Save the model every 15 epochs
     if (epoch + 1) % 15 == 0:
-      checkpoint.save(file_prefix = checkpoint_prefix)
+        checkpoint.save(file_prefix = checkpoint_prefix)
 
     print ('Time for epoch {} is {} sec'.format(epoch + 1, time.time()-start))
 
-  # Generate after the final epoch
-  display.clear_output(wait=True)
-  generate_and_save_images(generator,
+    # Generate after the final epoch
+    display.clear_output(wait=True)
+    generate_and_save_images(generator,
                            epochs,
                            seed)
 
 # Generate and save images
 def generate_and_save_images(model, epoch, test_input):
-  # Notice `training` is set to False.
-  # This is so all layers run in inference mode (batchnorm).
-  predictions = model(test_input, training=False)
+    # Notice `training` is set to False.
+    # This is so all layers run in inference mode (batchnorm).
+    predictions = model(test_input, training=False)
 
-  fig = plt.figure(figsize=(4,4))
+    fig = plt.figure(figsize=(4,4))
 
-  for i in range(predictions.shape[0]):
-      plt.subplot(4, 4, i+1)
-      plt.imshow(predictions[i, :, :, 0] * 127.5 + 127.5, cmap='gray')
-      plt.axis('off')
+    for i in range(predictions.shape[0]):
+        plt.subplot(4, 4, i+1)
+        plt.imshow(predictions[i, :, :, 0] * 127.5 + 127.5, cmap='gray')
+        plt.axis('off')
 
-  plt.savefig('image_at_epoch_{:04d}.png'.format(epoch))
-  #plt.show()
+    plt.savefig('image_at_epoch_{:04d}.png'.format(epoch))
+    #plt.show()
 
 
 '''
 Train the model
 Call the train() method defined above to train the generator and discriminator simultaneously. Note, training GANs
- can be tricky. It's important that the generator and discriminator do not overpower each other (e.g., that they train at a similar rate).
+can be tricky. It's important that the generator and discriminator do not overpower each other (e.g., that they train at a similar rate).
 
 At the beginning of the training, the generated images look like random noise. As training progresses, 
 the generated digits will look increasingly real. After about 50 epochs, they resemble MNIST digits. 
@@ -240,7 +241,7 @@ checkpoint.restore(tf.train.latest_checkpoint(checkpoint_dir))
 # Create a GIF
 # Display a single image using the epoch number
 def display_image(epoch_no):
-  return PIL.Image.open('image_at_epoch_{:04d}.png'.format(epoch_no))
+    return PIL.Image.open('image_at_epoch_{:04d}.png'.format(epoch_no))
 
 display_image(EPOCHS)
 
